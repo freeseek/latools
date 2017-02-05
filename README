@@ -1,0 +1,102 @@
+Release: 2013-06-18
+
+This program maps ancestry informative markers through genotype likelihoods and local ancestry deconvolutions across the genomes of admixed individuals.
+
+###########################################################################
+## INSTALLATION (UBUNTU/DEBIAN OS)                                       ##
+###########################################################################
+
+Local ancestry deconvolution files need to be formatted as UnionBedGraph files with headers that can be generated with bedtools unionbedg from local ancestry deconvolution files in bed format.
+$ sudo apt-get install bedtools unzip wget
+$ wget -rnd ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/phase1/analysis_results/ancestry_deconvolution
+$ for pop in ASW CLM MXL PUR; do
+$     unzip -o ${pop}_phase1_ancestry_deconvolution.zip
+$     files=$(echo $pop/*.bed)
+$     for file in $files; do sed -i -e s/\\\t[0-9]*$//g -e s/undet/0/g $file; done
+$     names=$(echo $files | sed -e s/$pop\\\///g -e s/.bed//g)
+$     bedtools unionbedg -header -i $files -names $names | gzip > $pop.bg.gz
+$ done
+$ files=$(echo {ASW,CLM,MXL,PUR}/*.bed)
+$ names=$(echo $files | sed -e s/\\\(ASW\\\|CLM\\\|MXL\\\|PUR\\\)\\\///g -e s/.bed//g)
+$ bedtools unionbedg -header -i $files -names $names | gzip > la.bg.gz
+The above commands should generate the local ancestry deconvolution matrix necessary to perform admixture mapping.
+
+To run the program you need NumPy, SciPy, PyVCF and you need to compile the included library:
+$ sudo apt-get install python-numpy python-scipy python-pip libc6-dev
+$ sudo pip install pyvcf
+$ gcc -std=gnu99 -shared -fPIC -O3 -o latools.so latools.c sumlog.c -lm
+$ The above commands should complete the installation on a Ubuntu machine.
+To properly run the program, make sure latools.py and latools.so are in the same directory.
+
+If you would rather use python3, just follow these instructions:
+$ sudo apt-get install python3-numpy python3-scipy python3-pip
+$ sudo pip3 install pyvcf
+$ sed -i 's/python$/python3/g' latools.py
+
+Additional suggested packages: GATK, samtools, tabix
+
+###########################################################################
+## USAGE                                                                 ##
+###########################################################################
+
+To see a full list of options, run the following command:
+$ python latools.py map
+
+###########################################################################
+## EXAMPLES                                                              ##
+###########################################################################
+
+prefix="ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20110521/ALL.chr"
+suffix=".phase1_release_v3.20101123.snps_indels_svs.genotypes.vcf.gz"
+
+1) Admixture map Duffy SNP rs2814778:
+tabix -fh $prefix\1$suffix 1:159,174,683-159,174,683 | latools.py map la.bg.gz -o rs2814778.vcf
+
+2) Admxiture map mismapped SNP rs62167565 from the vestegial centromere:
+tabix -fh $prefix\2$suffix 2:133,105,100-133,105,100 | latools.py map la.bg.gz -o rs62167565.vcf
+
+3) Admixture map mismapped SNPs from the 5p14.3/6p11.2 locus:
+tabix -fh $prefix\5$suffix 5:21,506,326-21,573,437 | latools.py map la.bg.gz -o prim2.vcf
+
+4) Admixture map mismapped SNPs from the DUSP22 locus:
+tabix -fh $prefix\6$suffix 6:256,518-382,461 | latools.py map la.bg.gz -o dusp22.vcf
+
+5) Admixture map mismapped SNPs from the PRIM2 locus:
+tabix -fh $prefix\6$suffix 6:57,453,735-57,453,735 | latools.py map la.bg.gz -o rs201079750.vcf
+
+6) Admxiture map mismapped SNP rs28415689:
+tabix -fh $prefix\14$suffix 14:19,109,897-19,109,897 | latools.py map la.bg.gz -o rs28415689.vcf
+
+7) Admxiture map mismapped SNP rs216090 from an Alu sequence:
+tabix -fh $prefix\16$suffix 16:158,661-158,661 | latools.py map la.bg.gz -o rs216090.vcf
+
+8) Admxiture map SNP rs4818105 highly diverged in Native Americans:
+tabix -fh $prefix\21$suffix 21:41,370,397-41,370,397 | latools.py map la.bg.gz -o rs4818105.vcf
+
+###########################################################################
+## IMPORTANT LINKS                                                       ##
+###########################################################################
+
+1) Local ancestry deconvolution files:
+ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase1/analysis_results/ancestry_deconvolution/ or
+ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/phase1/analysis_results/ancestry_deconvolution
+
+2) 1000 Genomes Project genotype calls:
+ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20110521/ or
+ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/release/20110521/
+
+3) Description of hs37d5 reference with included decoy sequences for phase2:
+ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/ or
+ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/phase2_reference_assembly_sequence/
+
+4) BedGraph Format:
+http://genome.ucsc.edu/goldenPath/help/bedgraph.html
+
+5) unionbedg Format:
+http://bedtools.readthedocs.org/en/latest/content/tools/unionbedg.html
+
+6) VCF (Variant Call Format):
+http://vcftools.sourceforge.net/specs.html
+
+7) PyVCF - A Variant Call Format Parser for Python:
+http://pyvcf.rtfd.org/
